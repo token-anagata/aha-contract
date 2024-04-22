@@ -150,11 +150,11 @@ contract StakingContract {
     function unstake(uint256 planId) external {
         require(plans[planId].isExists, "Invalid plan ID");
         
-        //uint256 stakedTime = stakedTimes[msg.sender][planId];
-        //uint256 duration = plans[planId].duration;
-        //uint256 endDuration = stakedTime + (duration * 1 days);
+        uint256 stakedTime = stakedTimes[msg.sender][planId];
+        uint256 duration = plans[planId].duration;
+        uint256 endDuration = stakedTime + (duration * 1 days);
         
-        //require(block.timestamp >= endDuration, "Duration not passed");
+        require(block.timestamp >= endDuration, "Duration not passed");
         
         uint256 amount = balances[msg.sender][planId];
         require(amount > 0, "No balance to unstake");
@@ -180,7 +180,7 @@ contract StakingContract {
 
     function getCurrentReward(address user, uint256 planId) external view returns (uint256) {
         require(plans[planId].isExists, "Invalid plan ID");
-        
+
         uint256 duration = plans[planId].duration;
 
         uint256 remainingDay = remainingDuration(user, planId);
