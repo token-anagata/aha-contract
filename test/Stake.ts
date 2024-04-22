@@ -32,9 +32,11 @@ describe("StakingContract", function () {
     const planId = 1n;
     const duration = 100n;
     const rewardRate = BigInt(2);
+    const minStake = BigInt(0);
+    const maxStake = BigInt(2000) * DECIMAL;
 
     const { stake, owner } = await loadFixture(deployStakeFixture);
-    const hash = await stake.write.createPlan([planId, duration, rewardRate], {
+    const hash = await stake.write.createPlan([planId, duration, rewardRate, minStake, maxStake], {
       account: owner.account
     })
     const logs = await stake.getEvents.PlanCreated()
@@ -46,11 +48,13 @@ describe("StakingContract", function () {
   it("should disallow another owner to create a plan", async function () {
     const planId = 2n;
     const duration = 100n;
-    const rewardRate = BigInt(5) * DECIMAL;
+    const rewardRate = BigInt(5);
+    const minStake = BigInt(0);
+    const maxStake = BigInt(2000) * DECIMAL;
 
     const { stake, addr1 } = await loadFixture(deployStakeFixture);
     
-    expect(stake.write.createPlan([planId, duration, rewardRate], {
+    expect(stake.write.createPlan([planId, duration, rewardRate, minStake, maxStake], {
       account: addr1.account
     })).to.be.revertedWith("Only contract owner can call this function");
    
@@ -70,11 +74,41 @@ describe("StakingContract", function () {
     expect(balance).equal(BigInt(100) * DECIMAL)
   });
 
+  it("should revert if user stakes below the minimum stake amount", async function () {
+    const planId = 1n;
+    const duration = 30n;
+    const rewardRate = BigInt(14);
+    const minStake = BigInt(1000) * DECIMAL;
+    const maxStake = BigInt(2000) * DECIMAL;
+    const minAmount = BigInt(500) * DECIMAL;
+    const maxAmount = BigInt(5000) * DECIMAL;
+
+    const { stake, token, owner, addr1 } = await loadFixture(deployStakeFixture);
+
+    await token.write.transfer([addr1.account.address, maxAmount]) // transfer token to user
+    await token.write.approve([stake.address, maxAmount], {
+      account: addr1.account
+    }) // allowance use token 
+    await stake.write.createPlan([planId, duration, rewardRate, minStake, maxStake], {
+      account: owner.account
+    })
+    
+    expect(stake.write.stake([planId, minAmount], {
+      account: addr1.account
+    })).to.be.revertedWith("Amount is below minimum stake");
+
+    expect(stake.write.stake([planId, maxAmount], {
+      account: addr1.account
+    })).to.be.revertedWith("Amount exceeds maximum stake");
+  });
+
   it("should allow user to stake tokens", async function () {
     const planId = 1n;
     const duration = 30n;
     const rewardRate = BigInt(14);
-    const amount = BigInt(100) * DECIMAL;
+    const minStake = BigInt(0);
+    const maxStake = BigInt(2000);
+    const amount = BigInt(1000);
 
     const { stake, token, owner, addr1 } = await loadFixture(deployStakeFixture);
 
@@ -82,7 +116,7 @@ describe("StakingContract", function () {
     await token.write.approve([stake.address, amount], {
       account: addr1.account
     }) // allowance use token 
-    await stake.write.createPlan([planId, duration, rewardRate], {
+    await stake.write.createPlan([planId, duration, rewardRate, minStake, maxStake], {
       account: owner.account
     })
 
@@ -99,7 +133,9 @@ describe("StakingContract", function () {
     const planId = 1n;
     const duration = 100n;
     const rewardRate = BigInt(2);
-    const amount = BigInt(100) * DECIMAL;
+    const minStake = BigInt(0);
+    const maxStake = BigInt(2000) * DECIMAL;
+    const amount = BigInt(1000) * DECIMAL;
 
     const { stake, token, owner, addr1 } = await loadFixture(deployStakeFixture);
 
@@ -107,7 +143,7 @@ describe("StakingContract", function () {
     await token.write.approve([stake.address, amount], {
       account: addr1.account
     }) // allowance use token 
-    await stake.write.createPlan([planId, duration, rewardRate], {
+    await stake.write.createPlan([planId, duration, rewardRate, minStake, maxStake], {
       account: owner.account
     }) 
     await stake.write.stake([planId, amount], {
@@ -124,7 +160,9 @@ describe("StakingContract", function () {
     const planId = 1n;
     const duration = 30n;
     const rewardRate = BigInt(15);
-    const amount = BigInt(100) * DECIMAL;
+    const minStake = BigInt(0);
+    const maxStake = BigInt(2000) * DECIMAL;
+    const amount = BigInt(1000) * DECIMAL;
 
     const { stake, token, owner, addr1 } = await loadFixture(deployStakeFixture);
 
@@ -132,7 +170,7 @@ describe("StakingContract", function () {
     await token.write.approve([stake.address, amount], {
       account: addr1.account
     }) // allowance use token 
-    await stake.write.createPlan([planId, duration, rewardRate], {
+    await stake.write.createPlan([planId, duration, rewardRate, minStake, maxStake], {
       account: owner.account
     }) 
     await stake.write.stake([planId, amount], {
@@ -140,16 +178,20 @@ describe("StakingContract", function () {
     }) // stake token
     const remainingDay = await stake.read.getRemainingDuration([addr1.account.address, planId]);
     const reward = await stake.read.getCurrentReward([addr1.account.address, planId]);
+
     // Write assertions to check if the reward is calculated correctly
     expect(remainingDay).to.equal(30n);
     expect(reward).to.equal(0);
   });
 
-  it("should allow user to unstake tokens", async function () {
+  it("should success user to unstake tokens", async function () {
     const planId = 1n;
     const duration = 1n;
-    const rewardRate = BigInt(1);
-    const amount = BigInt(100) * DECIMAL;
+    const rewardRate = BigInt(15);
+    const minStake = BigInt(0);
+    const maxStake = BigInt(2000) * DECIMAL;
+    const amount = BigInt(1000) * DECIMAL;
+    const rewardDeposit = BigInt(100000) * DECIMAL;
 
     const { stake, token, owner, addr1 } = await loadFixture(deployStakeFixture);
 
@@ -158,14 +200,18 @@ describe("StakingContract", function () {
       account: addr1.account
     }) // allowance use token 
 
-    await stake.write.createPlan([planId, duration, rewardRate], {
+    await token.write.transfer([stake.address, rewardDeposit]) // transfer token to user
+    await token.write.approve([stake.address, rewardDeposit], {
+      account: owner.account
+    }) // allowance use token 
+
+    await stake.write.createPlan([planId, duration, rewardRate, minStake, maxStake], {
       account: owner.account
     }) 
     await stake.write.stake([planId, amount], {
       account: addr1.account
     }) // stake token
-    console.log('owner:', owner.account.address, 'stake/token:', stake.address, 'adr1:', addr1.account.address)
-    console.log(await token.read.balanceOf([addr1.account.address]), await token.read.balanceOf([stake.address]))
+
     const hash = await stake.write.unstake([planId], {
       account: addr1.account,
     })
@@ -174,6 +220,8 @@ describe("StakingContract", function () {
 
     expect(hash).to.be.a('string')
     expect(logs[0].eventName).equal('Unstaked')
+    expect(await token.read.balanceOf([addr1.account.address])).equal((amount + (BigInt(1000 * 0.15) * DECIMAL)).toString())
+
   });
 
 });

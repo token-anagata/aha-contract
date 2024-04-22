@@ -12,7 +12,9 @@ contract StakingContract {
     
     struct Plan {
         uint256 duration; // Duration in seconds
-        uint256 rewardRate; // Reward rate per second
+        uint256 rewardRate; // Reward rate in percentage
+        uint256 minStake; // minimum stake
+        uint256 maxStake; // maximum stake
         bool isActive; // Whether the plan is active
         bool isExists;
     }
@@ -28,7 +30,7 @@ contract StakingContract {
         _;
     }
     
-    event PlanCreated(uint256 plainId, uint256 duration, uint256 rewardRate);
+    event PlanCreated(uint256 plainId, uint256 duration, uint256 rewardRate, uint256 minStake, uint256 maxStake);
     event Staked(address indexed user, uint256 planId, uint256 amount);
     event Unstaked(address indexed user, uint256 planId, uint256 amount);
     event PlanDeactivated(uint256 planId);
@@ -45,11 +47,11 @@ contract StakingContract {
         owner = newOwner;
     }
     
-    function createPlan(uint256 planId, uint256 duration, uint256 rewardRate) external onlyOwner {
+    function createPlan(uint256 planId, uint256 duration, uint256 rewardRate, uint256 minStake, uint256 maxStake) external onlyOwner {
         require(!plans[planId].isActive, "Plan ID already exists");
-        plans[planId] = Plan(duration, rewardRate, true, true);
+        plans[planId] = Plan(duration, rewardRate, minStake, maxStake, true, true);
         planIdCounter++; // Increment planIdCounter when a new plan is created
-        emit PlanCreated(planId, duration, rewardRate);
+        emit PlanCreated(planId, duration, rewardRate, minStake, maxStake);
     }
     
     function deactivatePlan(uint256 planId) external onlyOwner {
@@ -94,7 +96,7 @@ contract StakingContract {
             return 0;
         }
 
-        uint256 totalReward = (stakedAmount / 1e18) * rewardRate / 100;
+        uint256 totalReward = (stakedAmount / 1e18) * (rewardRate / 100);
         uint256 reward = totalReward / durationInDays; // Divide by 10^18 for precision
         
         return reward * 1e18;
@@ -123,6 +125,10 @@ contract StakingContract {
     function stake(uint256 planId, uint256 amount) external {
         require(plans[planId].isActive, "Invalid plan ID");
         require(amount > 0, "Amount must be greater than zero");
+
+        // Validate minimum and maximum stake
+        require(amount >= plans[planId].minStake, "Amount is below minimum stake");
+        require(amount <= plans[planId].maxStake, "Amount exceeds maximum stake");
         
         // Transfer tokens to contract
         token.transferFrom(msg.sender, address(this), amount);
@@ -174,9 +180,8 @@ contract StakingContract {
 
     function getCurrentReward(address user, uint256 planId) external view returns (uint256) {
         require(plans[planId].isExists, "Invalid plan ID");
-
-        uint256 stakedTime = stakedTimes[user][planId];
-        uint256 duration = block.timestamp - stakedTime / 1 days;
+        
+        uint256 duration = plans[planId].duration;
 
         uint256 remainingDay = remainingDuration(user, planId);
         uint256 rewardRatePerDay = calculateRewardPerDay(user, planId);
@@ -185,7 +190,7 @@ contract StakingContract {
         // Calculate reward based on staked duration and reward rate
         uint256 reward = totalDay * rewardRatePerDay; 
 
-        return reward * 1e18; // multiply by 10^18 for precision
+        return reward;
     }
 
     function getUserTotalStakedBalance(address user) external view returns (uint256) {

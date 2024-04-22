@@ -21,7 +21,7 @@ Running some of the following tasks:
 
 ```shell
 npx hardhat help
-npx hardhat test # compile smartcontract
+npx hardhat compile # compile smartcontract
 npx hardhat test # test smartcontract add REPORT_GAS=true for reporting gas
 npx hardhat node # run localhost rpc
 ```
@@ -44,7 +44,7 @@ You can check example deploy in binance smart chain testnet [0xDaea1c6B871b02b7D
 
 ### Create Plan 
 ``
-createPlan(uint256 planId, uint256 duration, uint256 rewardRate) external onlyOwner 
+function createPlan(uint256 planId, uint256 duration, uint256 rewardRate, uint256 minStake, uint256 maxStake) external onlyOwner 
 ``
 
 This function to create a plan for staking 
@@ -54,6 +54,11 @@ Unique number identifiation plan
 How long duration for staking running. Duration format in days, if fill 100 that's mean 100 days
 #### uint256 rewardRate 
 Reward rate in percentage. for example reward rate `5%`. after the duration is completed, investor gets 5% of the amount invested. for example 5000, then he will get 500(5%)
+#### uint256 minStake 
+Minimum amount to able stake in plan
+#### uint256 maxStake 
+Maximum amount to able stake in plan
+
 
 ### Deactivated Plan
 ``
@@ -102,7 +107,7 @@ Plan id was running
 stake(uint256 planId, uint256 amount) external
 ``
 
-This function that will be handle for staking user token  
+This function that will be handle for staking user token where ensure minimum and maximum amount to 
 #### uint256 planId 
 Plan id was running
 #### uint256 amount 
@@ -156,6 +161,7 @@ This function that gonna be show total amount staked
 
 ## Task list
 - [x] Test realible smarcontract 
-- [x] Test got reward 
+- [x] Never use in mainnet
+- [✓] Test got reward 
 - [✓] Add unit testing 
 
