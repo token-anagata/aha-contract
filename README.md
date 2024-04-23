@@ -122,6 +122,16 @@ This function that will be handle for unstake user was invested their token
 #### uint256 planId 
 Plan id was running
 
+### Get User Stacked Plans
+``
+function getUserStakedPlans(address user) external view returns (uint256[] memory) 
+``
+
+This function that gonna be return an array of plan id was user stacked
+#### uint256 user 
+User address
+
+
 ### Get Current Reward
 ``
 getCurrentReward(address user, uint256 planId) external view returns (uint256)
