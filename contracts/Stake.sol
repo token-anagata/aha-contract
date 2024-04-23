@@ -6,8 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract StakingContract {
     address public owner;
     IERC20 public token; // The ERC20 token to be staked
-    uint256 userCount;
-    uint256 planIdCounter;
+    uint256[] planIdState;
     address[] users;
     
     struct Plan {
@@ -30,7 +29,7 @@ contract StakingContract {
         _;
     }
     
-    event PlanCreated(uint256 plainId, uint256 duration, uint256 rewardRate, uint256 minStake, uint256 maxStake);
+    event PlanCreated(uint256 planId, uint256 duration, uint256 rewardRate, uint256 minStake, uint256 maxStake);
     event Staked(address indexed user, uint256 planId, uint256 amount);
     event Unstaked(address indexed user, uint256 planId, uint256 amount);
     event PlanDeactivated(uint256 planId);
@@ -50,7 +49,7 @@ contract StakingContract {
     function createPlan(uint256 planId, uint256 duration, uint256 rewardRate, uint256 minStake, uint256 maxStake) external onlyOwner {
         require(!plans[planId].isActive, "Plan ID already exists");
         plans[planId] = Plan(duration, rewardRate, minStake, maxStake, true, true);
-        planIdCounter++; // Increment planIdCounter when a new plan is created
+        planIdState.push(planId); // Push plan id when a new plan is created
         emit PlanCreated(planId, duration, rewardRate, minStake, maxStake);
     }
     
@@ -88,10 +87,8 @@ contract StakingContract {
         
         uint256 stakedAmount = balances[user][planId];
         uint256 rewardRate = plans[planId].rewardRate;
-
         // count duration in day when stacked until now
         uint256 durationInDays = remainingDuration(user, planId);
-
         if (durationInDays <= 0) {
             return 0;
         }
@@ -106,8 +103,7 @@ contract StakingContract {
         require(plans[planId].isExists, "Invalid plan ID");
         
         uint256 stakedAmount = balances[user][planId];
-        uint256 rewardRate = plans[planId].rewardRate;
-        
+        uint256 rewardRate = plans[planId].rewardRate;        
         // Calculate reward based on staked amount and reward rate per day
         uint256 reward = (stakedAmount / 1e18) * rewardRate / 100; // Divide by 10^18 for precision
         
@@ -132,13 +128,10 @@ contract StakingContract {
         
         // Transfer tokens to contract
         token.transferFrom(msg.sender, address(this), amount);
-        
+
         // Update user balance and staked time
         balances[msg.sender][planId] += amount;
         stakedTimes[msg.sender][planId] = block.timestamp; // Store current block timestamp
-
-        userCount++; // Increment user count when a new user interacts with the contract
-        
 
         if (!isUserExists(msg.sender)) {
             users.push(msg.sender); // Add user to the list if they are not already present
@@ -157,19 +150,15 @@ contract StakingContract {
         require(block.timestamp >= endDuration, "Duration not passed");
         
         uint256 amount = balances[msg.sender][planId];
+
         require(amount > 0, "No balance to unstake");
         
         // Calculate reward
         uint256 reward = calculateReward(msg.sender, planId);
         uint256 total = amount + reward;
 
-        // Transfer staked amount and reward to user
-        token.transfer(msg.sender, total);
-
-        // Update user balance
-        balances[msg.sender][planId] = 0;
-
-        userCount--; // Decrement user count when a user unstakes all their tokens
+        token.transfer(msg.sender, total);// Transfer staked amount and reward to user
+        balances[msg.sender][planId] = 0;// Update user balance
         
         emit Unstaked(msg.sender, planId, amount);
     }
@@ -182,21 +171,28 @@ contract StakingContract {
         require(plans[planId].isExists, "Invalid plan ID");
 
         uint256 duration = plans[planId].duration;
-
         uint256 remainingDay = remainingDuration(user, planId);
         uint256 rewardRatePerDay = calculateRewardPerDay(user, planId);
         uint256 totalDay = duration - remainingDay;
-
-        // Calculate reward based on staked duration and reward rate
-        uint256 reward = totalDay * rewardRatePerDay; 
+        uint256 reward = totalDay * rewardRatePerDay; // Calculate reward based on staked duration and reward rate
 
         return reward;
     }
 
+    function getUserStakedPlans(address user) external view returns (uint256[] memory) {
+        uint256[] memory stakedPlans = new uint256[](planIdState.length);
+        for (uint256 i = 0; i < planIdState.length; i++) {
+            if (balances[user][planIdState[i]] > 0) {
+                stakedPlans[i] = planIdState[i]; 
+            }
+        }
+        return stakedPlans;
+    }
+
     function getUserTotalStakedBalance(address user) external view returns (uint256) {
         uint256 totalStakedBalance = 0;
-        for (uint256 i = 0; i < planIdCounter; i++) {
-            totalStakedBalance += balances[user][i];
+        for (uint256 i = 0; i < planIdState.length; i++) {
+            totalStakedBalance += balances[user][planIdState[i]];
         }
         return totalStakedBalance;
     }
@@ -205,7 +201,7 @@ contract StakingContract {
         require(plans[planId].isExists, "Invalid plan ID");
 
         uint256 totalStakedAmount = 0;
-        for (uint256 i = 0; i < userCount; i++) {
+        for (uint256 i = 0; i < users.length; i++) {
             totalStakedAmount += balances[users[i]][planId];
         }
         return totalStakedAmount;
@@ -213,8 +209,8 @@ contract StakingContract {
 
     function getTotalAllUserStaked() external view returns (uint256) {
         uint256 totalStakedAmount = 0;
-        for (uint256 i = 0; i < userCount; i++) {
-            for (uint256 j = 0; j < planIdCounter; j++) {
+        for (uint256 i = 0; i < users.length; i++) {
+            for (uint256 j = 0; j < planIdState.length; j++) {
                 totalStakedAmount += balances[users[i]][j];
             }
         }

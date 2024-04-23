@@ -129,7 +129,7 @@ describe("StakingContract", function () {
     expect(logs[0].eventName).equal('Staked')
   });
 
-  it("should disallow user to unstake tokens when duration still running", async function () {
+  it("should revert user to unstake tokens when duration still running", async function () {
     const planId = 1n;
     const duration = 100n;
     const rewardRate = BigInt(2);
@@ -186,7 +186,7 @@ describe("StakingContract", function () {
 
   it("should success user to unstake tokens", async function () {
     const planId = 1n;
-    const duration = 1n;
+    const duration = 0n;
     const rewardRate = BigInt(15);
     const minStake = BigInt(0);
     const maxStake = BigInt(2000) * DECIMAL;
@@ -222,6 +222,57 @@ describe("StakingContract", function () {
     expect(logs[0].eventName).equal('Unstaked')
     expect(await token.read.balanceOf([addr1.account.address])).equal((amount + (BigInt(1000 * 0.15) * DECIMAL)).toString())
 
+  });
+
+  it("should return an empty array if the user has not staked tokens for any plan", async function () {
+    const { stake, owner, addr1 } = await loadFixture(deployStakeFixture);
+
+    const hash = await stake.read.getUserStakedPlans([addr1.account.address], {
+      account: owner.account
+    }) 
+
+    expect(hash).to.be.a('array')
+    expect(hash).to.be.an( "array" ).that.is.empty
+  
+  })
+
+  it("should return an array of plan IDs for which the user has staked tokens", async function () {
+    const planId = 1n;
+    const duration = 1n;
+    const rewardRate = BigInt(15);
+    const minStake = BigInt(0);
+    const maxStake = BigInt(2000) * DECIMAL;
+    const transferAmount = BigInt(1500) * DECIMAL;
+    const amount1 = BigInt(1000) * DECIMAL;
+    const amount2 = BigInt(500) * DECIMAL;
+  
+    const { stake, token, owner, addr1 } = await loadFixture(deployStakeFixture);
+
+    await token.write.transfer([addr1.account.address, transferAmount]) // transfer token to user
+    await token.write.approve([stake.address, transferAmount], {
+      account: addr1.account
+    }) // allowance use token 
+
+    await stake.write.createPlan([planId, duration, rewardRate, minStake, maxStake], {
+      account: owner.account
+    }) 
+    await stake.write.createPlan([planId + 1n, duration, rewardRate, minStake, maxStake], {
+      account: owner.account
+    }) 
+    // multiple stake
+    await stake.write.stake([planId, amount1], {
+      account: addr1.account
+    }) 
+    await stake.write.stake([planId + 1n, amount2], {
+      account: addr1.account
+    }) 
+
+    const hash = await stake.read.getUserStakedPlans([addr1.account.address], {
+      account: owner.account
+    }) 
+
+    expect(hash).to.be.an( "array" ).that.is.not.empty
+    expect(hash).to.contain.oneOf([1n, 2n])
   });
 
 });

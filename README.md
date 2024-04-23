@@ -37,7 +37,7 @@ npx hardhat ignition deploy ignition/modules/Stake.ts --network bscMainnet --par
 ```
 
 
-You can check example deploy in binance smart chain testnet [0x283DDdAfC644212d9ed5b2d4A2d62A0c9A90CBAA](https://testnet.bscscan.com/address/0x283DDdAfC644212d9ed5b2d4A2d62A0c9A90CBAA#code).
+You can check example deploy in binance smart chain testnet [0xDdcd7Ef97EDd3d3255BFACAC826486B2b5047964](https://testnet.bscscan.com/address/0xDdcd7Ef97EDd3d3255BFACAC826486B2b5047964#code).
 
 
 ## Documentation of code
