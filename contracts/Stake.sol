@@ -32,6 +32,7 @@ contract StakingContract {
     event PlanCreated(uint256 planId, uint256 duration, uint256 rewardRate, uint256 minStake, uint256 maxStake);
     event Staked(address indexed user, uint256 planId, uint256 amount);
     event Unstaked(address indexed user, uint256 planId, uint256 amount);
+    event PlanActivated(uint256 planId);
     event PlanDeactivated(uint256 planId);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     
@@ -51,6 +52,12 @@ contract StakingContract {
         plans[planId] = Plan(duration, rewardRate, minStake, maxStake, true, true);
         planIdState.push(planId); // Push plan id when a new plan is created
         emit PlanCreated(planId, duration, rewardRate, minStake, maxStake);
+    }
+
+    function activatePlan(uint256 planId) external onlyOwner {
+        require(!plans[planId].isActive, "Plan ID is already active");
+        plans[planId].isActive = true;
+        emit PlanActivated(planId);
     }
     
     function deactivatePlan(uint256 planId) external onlyOwner {

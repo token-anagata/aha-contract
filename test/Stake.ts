@@ -58,6 +58,63 @@ describe("StakingContract", function () {
       account: addr1.account
     })).to.be.revertedWith("Only contract owner can call this function");
    
+  })
+
+
+  it("should allow owner to deactivate a plan", async function () {
+    const planId = 1n;
+    const duration = 100n;
+    const rewardRate = BigInt(2);
+    const minStake = BigInt(0);
+    const maxStake = BigInt(2000) * DECIMAL;
+
+    const { stake, owner } = await loadFixture(deployStakeFixture);
+    await stake.write.createPlan([planId, duration, rewardRate, minStake, maxStake], {
+      account: owner.account
+    })
+
+    const hash = await stake.write.deactivatePlan([planId], {
+      account: owner.account
+    })
+    const logs = await stake.getEvents.PlanDeactivated()
+
+    expect(stake.write.deactivatePlan([planId], {
+      account: owner.account
+    })).to.be.revertedWith("Plan ID is already inactive")
+    
+    expect(hash).to.be.a('string')
+    expect(logs[0].eventName).equal('PlanDeactivated')
+  });
+
+
+  it("should owner able to activated again a plan", async function () {
+    const planId = 1n;
+    const duration = 100n;
+    const rewardRate = BigInt(2);
+    const minStake = BigInt(0);
+    const maxStake = BigInt(2000) * DECIMAL;
+
+    const { stake, owner } = await loadFixture(deployStakeFixture);
+    await stake.write.createPlan([planId, duration, rewardRate, minStake, maxStake], {
+      account: owner.account
+    })
+
+    await stake.write.deactivatePlan([planId], {
+      account: owner.account
+    })
+
+    const hash = await stake.write.activatePlan([planId], {
+      account: owner.account
+    })
+
+    const logs = await stake.getEvents.PlanActivated()
+
+    expect(stake.write.activatePlan([planId], {
+      account: owner.account
+    })).to.be.revertedWith("Plan ID is already active")
+    
+    expect(hash).to.be.a('string')
+    expect(logs[0].eventName).equal('PlanActivated')
   });
 
   it("should owner able transfer token to user", async function () {
