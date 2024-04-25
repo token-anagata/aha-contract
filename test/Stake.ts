@@ -7,6 +7,7 @@ import StakeModule from "../ignition/modules/Stake";
 import TokenModule from "../ignition/modules/Token";
 
 const DECIMAL = BigInt(1_000_000_000_000_000_000);
+const REAL_DECIMAL = 10 ** 18
 
 describe("StakingContract", function () {
     async function deployStakeFixture() {
@@ -31,7 +32,7 @@ describe("StakingContract", function () {
   it("should allow owner to create a plan", async function () {
     const planId = 1n;
     const duration = 100n;
-    const rewardRate = BigInt(2);
+    const rewardRate = BigInt(2 * REAL_DECIMAL);
     const minStake = BigInt(0);
     const maxStake = BigInt(2000) * DECIMAL;
 
@@ -48,7 +49,7 @@ describe("StakingContract", function () {
   it("should disallow another owner to create a plan", async function () {
     const planId = 2n;
     const duration = 100n;
-    const rewardRate = BigInt(5);
+    const rewardRate = BigInt(5 * REAL_DECIMAL);
     const minStake = BigInt(0);
     const maxStake = BigInt(2000) * DECIMAL;
 
@@ -64,7 +65,7 @@ describe("StakingContract", function () {
   it("should allow owner to deactivate a plan", async function () {
     const planId = 1n;
     const duration = 100n;
-    const rewardRate = BigInt(2);
+    const rewardRate = BigInt(2 * REAL_DECIMAL);
     const minStake = BigInt(0);
     const maxStake = BigInt(2000) * DECIMAL;
 
@@ -90,7 +91,7 @@ describe("StakingContract", function () {
   it("should owner able to activated again a plan", async function () {
     const planId = 1n;
     const duration = 100n;
-    const rewardRate = BigInt(2);
+    const rewardRate = BigInt(2 * REAL_DECIMAL);
     const minStake = BigInt(0);
     const maxStake = BigInt(2000) * DECIMAL;
 
@@ -134,7 +135,7 @@ describe("StakingContract", function () {
   it("should revert if user stakes below the minimum stake amount", async function () {
     const planId = 1n;
     const duration = 30n;
-    const rewardRate = BigInt(14);
+    const rewardRate = BigInt(14 * REAL_DECIMAL);
     const minStake = BigInt(1000) * DECIMAL;
     const maxStake = BigInt(2000) * DECIMAL;
     const minAmount = BigInt(500) * DECIMAL;
@@ -162,7 +163,7 @@ describe("StakingContract", function () {
   it("should allow user to stake tokens", async function () {
     const planId = 1n;
     const duration = 30n;
-    const rewardRate = BigInt(14);
+    const rewardRate = BigInt(14 * REAL_DECIMAL);
     const minStake = BigInt(0);
     const maxStake = BigInt(2000);
     const amount = BigInt(1000);
@@ -189,7 +190,7 @@ describe("StakingContract", function () {
   it("should revert user to unstake tokens when duration still running", async function () {
     const planId = 1n;
     const duration = 100n;
-    const rewardRate = BigInt(2);
+    const rewardRate = BigInt(2 * REAL_DECIMAL);
     const minStake = BigInt(0);
     const maxStake = BigInt(2000) * DECIMAL;
     const amount = BigInt(1000) * DECIMAL;
@@ -216,7 +217,7 @@ describe("StakingContract", function () {
   it("should remaining days & calculate reward correctly", async function () {
     const planId = 1n;
     const duration = 30n;
-    const rewardRate = BigInt(15);
+    const rewardRate = BigInt(15 * REAL_DECIMAL);
     const minStake = BigInt(0);
     const maxStake = BigInt(2000) * DECIMAL;
     const amount = BigInt(1000) * DECIMAL;
@@ -244,7 +245,7 @@ describe("StakingContract", function () {
   it("should success user to unstake tokens", async function () {
     const planId = 1n;
     const duration = 0n;
-    const rewardRate = BigInt(15);
+    const rewardRate = BigInt(4.5 * REAL_DECIMAL);
     const minStake = BigInt(0);
     const maxStake = BigInt(2000) * DECIMAL;
     const amount = BigInt(1000) * DECIMAL;
@@ -277,7 +278,7 @@ describe("StakingContract", function () {
 
     expect(hash).to.be.a('string')
     expect(logs[0].eventName).equal('Unstaked')
-    expect(await token.read.balanceOf([addr1.account.address])).equal((amount + (BigInt(1000 * 0.15) * DECIMAL)).toString())
+    expect(await token.read.balanceOf([addr1.account.address])).equal((amount + (BigInt(1000 * 0.045) * DECIMAL)).toString())
 
   });
 

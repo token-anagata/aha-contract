@@ -100,21 +100,21 @@ contract StakingContract {
             return 0;
         }
 
-        uint256 totalReward = (stakedAmount / 1e18) * (rewardRate / 100);
+        uint256 totalReward = stakedAmount * rewardRate / (100 * 1e18);
         uint256 reward = totalReward / durationInDays; // Divide by 10^18 for precision
         
-        return reward * 1e18;
+        return reward;
     }
 
     function calculateReward(address user, uint256 planId) internal view returns (uint256) {
         require(plans[planId].isExists, "Invalid plan ID");
         
         uint256 stakedAmount = balances[user][planId];
-        uint256 rewardRate = plans[planId].rewardRate;        
+        uint256 rewardRate = plans[planId].rewardRate;       
         // Calculate reward based on staked amount and reward rate per day
-        uint256 reward = (stakedAmount / 1e18) * rewardRate / 100; // Divide by 10^18 for precision
+        uint256 reward = stakedAmount * rewardRate / (100 * 1e18); // Divide by 10^18 for precision
         
-        return reward * 1e18;
+        return reward;
     }
 
     function getRewarPerDay(address user, uint256 planId) external view returns (uint256) {
