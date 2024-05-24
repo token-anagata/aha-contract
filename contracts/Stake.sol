@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract StakingContract {
     address public owner;
     IERC20 public token; // The ERC20 token to be staked
-    uint256[] planIdState;
+    uint256[] planIds;
     address[] users;
     
     struct Plan {
@@ -50,7 +50,7 @@ contract StakingContract {
     function createPlan(uint256 planId, uint256 duration, uint256 rewardRate, uint256 minStake, uint256 maxStake) external onlyOwner {
         require(!plans[planId].isActive, "Plan ID already exists");
         plans[planId] = Plan(duration, rewardRate, minStake, maxStake, true, true);
-        planIdState.push(planId); // Push plan id when a new plan is created
+        planIds.push(planId); // Push plan id when a new plan is created
         emit PlanCreated(planId, duration, rewardRate, minStake, maxStake);
     }
 
@@ -187,10 +187,10 @@ contract StakingContract {
     }
 
     function getUserStakedPlans(address user) external view returns (uint256[] memory) {
-        uint256[] memory stakedPlans = new uint256[](planIdState.length);
-        for (uint256 i = 0; i < planIdState.length; i++) {
-            if (balances[user][planIdState[i]] > 0) {
-                stakedPlans[i] = planIdState[i]; 
+        uint256[] memory stakedPlans = new uint256[](planIds.length);
+        for (uint256 i = 0; i < planIds.length; i++) {
+            if (balances[user][planIds[i]] > 0) {
+                stakedPlans[i] = planIds[i]; 
             }
         }
         return stakedPlans;
@@ -198,8 +198,8 @@ contract StakingContract {
 
     function getUserTotalStakedBalance(address user) external view returns (uint256) {
         uint256 totalStakedBalance = 0;
-        for (uint256 i = 0; i < planIdState.length; i++) {
-            totalStakedBalance += balances[user][planIdState[i]];
+        for (uint256 i = 0; i < planIds.length; i++) {
+            totalStakedBalance += balances[user][planIds[i]];
         }
         return totalStakedBalance;
     }
@@ -217,7 +217,7 @@ contract StakingContract {
     function getTotalAllUserStaked() external view returns (uint256) {
         uint256 totalStakedAmount = 0;
         for (uint256 i = 0; i < users.length; i++) {
-            for (uint256 j = 0; j < planIdState.length; j++) {
+            for (uint256 j = 0; j < planIds.length; j++) {
                 totalStakedAmount += balances[users[i]][j];
             }
         }

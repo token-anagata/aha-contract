@@ -1,5 +1,20 @@
 {
     "StakeModule": {
       "token": "0xC14c4e99c471cb3e774434E48Ee1830C5A1778B0"
+    },
+    "TokenModule" : {
+      "initialSupply": "700000000"
+    },
+    "UsdtTokenModule" : {
+      "initialSupply": "30000000"
+    },
+    "IcoModule": {
+      "tokenSale": "0xC14c4e99c471cb3e774434E48Ee1830C5A1778B0",
+      "tokenAccepted": "0x48e04137Fafce43E2A97d8d9d61A386175d5B869",
+      "tokenPrice": "15000000000000000",
+      "minAmount": "1000000000000000000",
+      "maxAmount": "100000000000000000000",
+      "startTime": 1716272160,
+      "durationInDays": 300
     }
   }

@@ -15,6 +15,9 @@ const config: HardhatUserConfig = {
     }
   },
   networks: {
+    localhost: {
+      url: "http://127.0.0.1:8545",
+    },
     bscTestnet: {
       url: "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
       chainId: 97,
