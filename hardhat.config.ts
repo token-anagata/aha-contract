@@ -14,6 +14,9 @@ const config: HardhatUserConfig = {
       }
     }
   },
+  ignition: {
+    requiredConfirmations: 1
+  },
   networks: {
     localhost: {
       url: "http://127.0.0.1:8545",
@@ -22,7 +25,8 @@ const config: HardhatUserConfig = {
       url: "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
       chainId: 97,
       gasPrice: 20000000000,
-      accounts: [privateKey]
+      accounts: [privateKey],
+      gasMultiplier: 1.5, 
     },
     bscMainnet: {
       url: "https://bsc-dataseed.bnbchain.org/",
