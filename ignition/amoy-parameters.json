@@ -1,0 +1,11 @@
+{
+    "TokenModule" : {
+      "initialSupply": "700000000"
+    },
+    "UsdtTokenModule" : {
+      "initialSupply": "30000000"
+    },  
+    "StakeV2Module": {
+      "token": "0x128bd6C23E753157FF2C06B983065959eF8C6cEb"
+    }
+  }
