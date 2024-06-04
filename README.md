@@ -1,6 +1,7 @@
-# AHA Token Stake Smart Contract 
+# AHA Smart Contract Collection
 
-This project contains smartcontract for staking token AHA.
+This project contains collection of smartcontract Anagata Token. Token Anagata is a green token for carbon dioxide (CO2) reduction through green energy projects and sustainability projects collaboration.
+
 
 ## How running
 Install dependencies
