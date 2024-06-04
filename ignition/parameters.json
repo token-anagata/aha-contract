@@ -16,5 +16,8 @@
       "maxAmount": "100000000000000000000",
       "startTime": 1716272160,
       "durationInDays": 300
+    },
+    "StakeV2Module": {
+      "token": "0xC14c4e99c471cb3e774434E48Ee1830C5A1778B0"
     }
   }

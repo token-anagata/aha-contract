@@ -74,7 +74,7 @@ contract ICOContract {
         endTime = _endTime;
     }
 
-    function buyTokens(uint256 _amount) external payable duringICO {
+    function buyTokens(uint256 _amount) external duringICO {
          // Validate minimum and maximum token price
         require(_amount >= minAmount, "Amount is below minimum token price");
         require(_amount <= maxAmount, "Amount exceeds maximum token price");
