@@ -5,8 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ContributeContract {
     address public owner;
-    IERC20 public token; // The ERC20 token to be Invest
+    IERC20 public token;
+    IERC20 public tokenAccepted;
     uint256[] projectIds;
+    uint256 minTokenAccepted;
 
     enum STATUS {
         FREZE_FUNDING,
@@ -52,6 +54,7 @@ contract ContributeContract {
         STATUS status
     );
     event ProjectUpdated(uint256 projectId);
+    event TokenAcceptedUpdated(uint256 minTokenAccepted);
     event Queue(address indexed user, uint256 projectId, uint256 amount);
     event AllocateLeverages(
         uint256 projectId,
@@ -64,9 +67,15 @@ contract ContributeContract {
         address indexed newOwner
     );
 
-    constructor(address _token) {
+    constructor(
+        address _token,
+        address _tokenAccepted,
+        uint256 _minTokenAccepted
+    ) {
         owner = msg.sender;
+        minTokenAccepted = _minTokenAccepted;
         token = IERC20(_token);
+        tokenAccepted = IERC20(_tokenAccepted);
     }
 
     function transferOwnership(address _newOwner) external onlyOwner {
@@ -108,9 +117,19 @@ contract ContributeContract {
         STATUS _status
     ) external onlyOwner {
         require(projects[_projectId].isExists, "Invalid project ID");
-        require(projects[_projectId].status == _status, "Project status is already ID");
+        require(
+            projects[_projectId].status != _status,
+            "Project status is already changed"
+        );
         projects[_projectId].status = _status;
         emit ProjectUpdated(_projectId);
+    }
+
+    function changeMinimumTokenAccepted(
+        uint256 _minTokenAccepted
+    ) external onlyOwner {
+        minTokenAccepted = _minTokenAccepted;
+        emit TokenAcceptedUpdated(minTokenAccepted);
     }
 
     function remainingDuration(
@@ -193,13 +212,24 @@ contract ContributeContract {
     function queuesUp(uint256 _projectId, uint256 _amount) external {
         require(projects[_projectId].isExists, "Invalid project ID");
         require(
-            projects[_projectId].status != STATUS.ON_FUNDING,
+            uint(projects[_projectId].status) == uint(STATUS.ON_FUNDING),
             "Invalid status"
         );
         require(_amount > 0, "Amount must be greater than zero");
         // Validate minimum and maximum stake
-        require(_amount >= projects[_projectId].minAmount, "Amount is below minimum stake");
-        require(_amount <= projects[_projectId].maxAmount, "Amount exceeds maximum stake");
+        require(
+            _amount >= projects[_projectId].minAmount,
+            "Amount is below minimum stake"
+        );
+        require(
+            _amount <= projects[_projectId].maxAmount,
+            "Amount exceeds maximum stake"
+        );
+        // Validate had an aha token minimum
+        require(
+            tokenAccepted.balanceOf(msg.sender) >= minTokenAccepted,
+            "You dont have quite minimum token accepted"
+        );
 
         require(token.approve(address(this), _amount), "Approval failed");
 
@@ -218,7 +248,10 @@ contract ContributeContract {
 
     function allocate(uint256 _projectId) external onlyOwner {
         require(projects[_projectId].isExists, "Invalid project ID");
-        require(projects[_projectId].status == STATUS.FULFILLED, "Invalid status");
+        require(
+            uint(projects[_projectId].status) != uint(STATUS.FULFILLED),
+            "Invalid status"
+        );
 
         uint256 totalAddress = addresses[_projectId].length;
         uint256 total = 0;
@@ -226,13 +259,17 @@ contract ContributeContract {
         for (uint256 i = 0; i < totalAddress; i++) {
             address currentAddress = addresses[_projectId][i];
             uint256 amount = leverage[_projectId][currentAddress].amount;
-            // Transfer user tokens was into queue register to contract
-            token.transferFrom(currentAddress, address(this), amount);
-            // Update data
-            leverage[_projectId][currentAddress].timestamp = block.timestamp;
-            leverage[_projectId][currentAddress].isQueue = false;
 
-            total += amount;
+            if (leverage[_projectId][currentAddress].isQueue) {
+                // Transfer user tokens was into queue register to contract
+                token.transferFrom(currentAddress, address(this), amount);
+                // Update data
+                leverage[_projectId][currentAddress].timestamp = block
+                    .timestamp;
+                leverage[_projectId][currentAddress].isQueue = false;
+
+                total += amount;
+            }
         }
 
         projects[_projectId].status = STATUS.FULFILLED; //Change status to fulfilled
@@ -241,7 +278,10 @@ contract ContributeContract {
 
     function claim(uint256 _projectId) external {
         require(projects[_projectId].isExists, "Invalid project ID");
-        require(projects[_projectId].status != STATUS.FULFILLED, "Invalid status");
+        require(
+            uint(projects[_projectId].status) == uint(STATUS.FULFILLED),
+            "Invalid status"
+        );
 
         uint256 stakedTime = leverage[_projectId][msg.sender].timestamp;
         uint256 duration = projects[_projectId].duration;
@@ -257,7 +297,7 @@ contract ContributeContract {
         uint256 reward = calculateReward(msg.sender, _projectId);
         uint256 total = amount + reward;
 
-        token.transfer(msg.sender, total); // Transfer Invest amount and reward to user
+        token.transferFrom(owner, msg.sender, total); // Transfer Invest amount and reward to user
         leverage[_projectId][msg.sender].amount = 0; // Update user balance
 
         emit Claim(msg.sender, _projectId, amount);

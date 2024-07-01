@@ -19,5 +19,10 @@
     },
     "StakeV2Module": {
       "token": "0xC14c4e99c471cb3e774434E48Ee1830C5A1778B0"
+    },
+    "ContributeModule": {
+      "usdt": "0x48e04137Fafce43E2A97d8d9d61A386175d5B869",
+      "aha": "0xC14c4e99c471cb3e774434E48Ee1830C5A1778B0",
+      "min": "10000000000000000000000"
     }
   }
